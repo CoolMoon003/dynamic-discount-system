@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        // This tells kubectl exactly where to find the 'keys' to your cluster
+        // Pointing Jenkins to your actual user config file
         KUBECONFIG = "C:/Users/batch1/.kube/config"
     }
 
@@ -13,9 +13,15 @@ pipeline {
             }
         }
 
-        stage('Build & Test') {
+        stage('Build & Package') {
             steps {
-                bat 'mvn clean package test'
+                bat 'mvn clean package'
+            }
+        }
+
+        stage('JUnit Testing') {
+            steps {
+                bat 'mvn test'
             }
         }
 
@@ -27,15 +33,23 @@ pipeline {
 
         stage('K8s Deploy') {
             steps {
-                // Using --kubeconfig here is a double-safety measure
-                bat "kubectl --kubeconfig=${KUBECONFIG} apply -f deployment.yaml --validate=false"
+                echo 'Deploying to Docker Desktop Kubernetes...'
+                // Using --kubeconfig and specifying the server directly
+                bat 'kubectl --kubeconfig=%KUBECONFIG% --server=https://kubernetes.docker.internal:6443 --insecure-skip-tls-verify apply -f deployment.yaml'
             }
         }
 
-        stage('Verify') {
+        stage('Final Verification') {
             steps {
-                bat "kubectl --kubeconfig=${KUBECONFIG} get pods"
+                bat 'kubectl --kubeconfig=%KUBECONFIG% get pods'
+                bat 'kubectl --kubeconfig=%KUBECONFIG% get deployments'
             }
+        }
+    }
+    
+    post {
+        success {
+            echo 'SUCCESS: Dynamic Discount System is live on Kubernetes!'
         }
     }
 }
