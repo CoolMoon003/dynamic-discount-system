@@ -22,12 +22,13 @@ pipeline {
                 bat 'docker build -t discount-app:v1 .'
             }
         }
-
         stage('K8s Deploy') {
             steps {
-                // The --validate=false skips the OpenAPI download that caused your error
                 echo 'Deploying to Kubernetes...'
-                bat 'kubectl apply -f deployment.yaml --validate=false'
+                // We point directly to the config file so Jenkins doesn't use localhost:8080
+                withEnv(["KUBECONFIG=C:/Users/batch1/.kube/config"]) {
+                    bat 'kubectl apply -f deployment.yaml --validate=false'
+                }
             }
         }
 
