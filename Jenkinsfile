@@ -1,63 +1,41 @@
 pipeline {
     agent any
 
-    environment {
-        // Define the image name to keep the script clean
-        DOCKER_IMAGE = "discount-app:v1"
-    }
-
     stages {
         stage('Checkout') {
             steps {
-                // This pulls the latest code from the GitHub repo linked in the Jenkins Job
+                // Pulls the latest code from your GitHub repository
                 checkout scm
             }
         }
 
-        stage('Build & Package') {
+        stage('Build & Test') {
             steps {
-                echo 'Compiling the Dynamic Discount System...'
-                bat 'mvn clean package'
-            }
-        }
-
-        stage('JUnit Testing') {
-            steps {
-                echo 'Running Discount Calculation Logic Tests...'
-                bat 'mvn test'
+                // Standard Maven build and JUnit execution
+                bat 'mvn clean package test'
             }
         }
 
         stage('Docker Build') {
             steps {
-                echo 'Creating Docker Image using Eclipse Temurin...'
-                bat "docker build -t ${DOCKER_IMAGE} ."
+                // Builds the image we just verified in your logs
+                bat 'docker build -t discount-app:v1 .'
             }
         }
 
         stage('K8s Deploy') {
             steps {
-                echo 'Deploying to Kubernetes Cluster...'
-                // The --validate=false flag helps if Jenkins has trouble reaching the OpenAPI spec
+                // The --validate=false skips the OpenAPI download that caused your error
+                echo 'Deploying to Kubernetes...'
                 bat 'kubectl apply -f deployment.yaml --validate=false'
             }
         }
 
-        stage('Verify Deployment') {
+        stage('Verify') {
             steps {
-                echo 'Checking Pod Status...'
+                // Confirms the pods are actually running
                 bat 'kubectl get pods'
-                bat 'kubectl get deployments'
             }
-        }
-    }
-
-    post {
-        success {
-            echo 'CI/CD Pipeline Completed Successfully!'
-        }
-        failure {
-            echo 'Pipeline Failed. Please check the Console Output for errors.'
         }
     }
 }
