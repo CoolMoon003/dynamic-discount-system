@@ -17,4 +17,4 @@ spec:
         image: discount-app:v1
         imagePullPolicy: Never  # This tells K8s to use the image we just built locally
         ports:
-        - containerPort: 8080
+        - containerPort: 8081
